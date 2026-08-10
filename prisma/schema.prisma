@@ -1,0 +1,165 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// NOTE ON ENUMS: SQLite (used for local dev) doesn't support native enums,
+// so status/category-style fields are typed as String here and validated
+// with zod at the application boundary (see src/lib/validation.ts). When
+// moving to Postgres (Neon) for production, swap `provider = "sqlite"` to
+// `provider = "postgresql"` and these can optionally be converted to real
+// `enum` types.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Company {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+
+  // Intake fields captured by the wizard
+  format             String // commercial | branded | talking-head | narrative | docu-style
+  budgetTier         String // small | medium | large (see lib/rules-engine.ts THRESHOLDS)
+  shootMode          String // in-person | remote | hybrid
+  locationText       String?
+  crewSizeEstimate   Int?
+  targetShootDate    DateTime?
+  targetDeliveryDate DateTime?
+
+  // Special-scene flags captured now for schema stability; Phase 2 will
+  // attach compliance task templates to these. Not acted on in Phase 1.
+  hasStunts       Boolean @default(false)
+  hasWeapons      Boolean @default(false)
+  hasMinors       Boolean @default(false)
+  hasNudity       Boolean @default(false)
+  hasAnimals      Boolean @default(false)
+  hasVehicles     Boolean @default(false)
+  hasWaterOrRain  Boolean @default(false)
+  hasHeights      Boolean @default(false)
+  hasFireOrPyro   Boolean @default(false)
+
+  status    String   @default("intake") // intake | pre-production | production | post-production | delivered | archived
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks         Task[]
+  people        ProjectPerson[]
+  locations     Location[]
+  emailDrafts   EmailDraft[]
+  activityLogs  ActivityLog[]
+}
+
+model TaskTemplate {
+  id            String @id @default(cuid())
+  title         String
+  description   String
+  category      String // Production Info | Crew | Locations | Legal & Insurance | Equipment & Rentals
+  // JSON-encoded condition rules matched against Project fields by the rules
+  // engine, e.g. {"shootMode":"in-person"} or {"crewSizeEstimateGte":10}
+  conditions    String @default("{}")
+  dueOffsetDays Int // days before targetShootDate this task should be due (negative = after)
+  sortOrder     Int    @default(0)
+  createdAt     DateTime @default(now())
+
+  tasks Task[]
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  templateId  String?
+  template    TaskTemplate? @relation(fields: [templateId], references: [id])
+
+  title       String
+  description String?
+  category    String // Production Info | Crew | Locations | Legal & Insurance | Equipment & Rentals
+  status      String   @default("not_started") // not_started | in_progress | ready_for_review | complete | n_a
+  owner       String?
+  dueDate     DateTime?
+  notes       String?
+  aiSuggested Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  activityLogs ActivityLog[]
+}
+
+model Person {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+
+  projects ProjectPerson[]
+}
+
+// Join table: a Person's role/status on a specific Project
+model ProjectPerson {
+  id         String  @id @default(cuid())
+  projectId  String
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  personId   String
+  person     Person  @relation(fields: [personId], references: [id])
+
+  role       String // e.g. Director, Producer, DP, Talent, Vendor Contact
+  formStatus String  @default("not_sent") // not_sent | sent | completed
+  notes      String?
+
+  @@unique([projectId, personId, role])
+}
+
+model Location {
+  id               String  @id @default(cuid())
+  projectId        String
+  project          Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  address          String
+  ownerContactName String?
+  ownerContactInfo String?
+  notes            String?
+
+  createdAt DateTime @default(now())
+}
+
+model EmailDraft {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  templateSource String // kickoff | status_update | nudge
+  subject        String
+  body           String
+  status         String   @default("draft") // draft | marked_sent
+  createdAt      DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id])
+
+  message   String
+  createdAt DateTime @default(now())
+}
