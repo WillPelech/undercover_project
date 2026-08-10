@@ -10,12 +10,16 @@ const authConfigured = Boolean(
 
 // The cron route authenticates itself via CRON_SECRET (see
 // src/app/api/cron/nudges/route.ts) and must stay reachable without a user
-// session.
-const isPublicRoute = createRouteMatcher(["/api/cron(.*)"]);
+// session. Constructed lazily (only once Clerk is actually configured) to
+// avoid createRouteMatcher's deprecation warning firing in the default
+// no-auth dev mode.
+const isPublicRoute = authConfigured
+  ? createRouteMatcher(["/api/cron(.*)"])
+  : null;
 
 export default authConfigured
   ? clerkMiddleware(async (auth, req) => {
-      if (isPublicRoute(req)) return;
+      if (isPublicRoute?.(req)) return;
       await auth.protect();
     })
   : function noAuthMiddleware() {

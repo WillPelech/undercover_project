@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
+/*
+ * This app is deliberately light-only for now (all components use hardcoded
+ * Tailwind neutral-* colors, no dark: variants). Without an explicit
+ * `color-scheme`, browsers render native form controls (select dropdowns,
+ * checkboxes, date pickers) using the OS's dark-mode chrome whenever the
+ * user's system is in dark mode — which clashes badly with the light custom
+ * styling everywhere else. Forcing `light` here keeps native widgets
+ * consistent with the rest of the UI. Revisit if/when real dark mode support
+ * is added.
+ */
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -10,13 +21,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
