@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { TASK_CATEGORIES } from "@/lib/constants";
+import { SPECIAL_SCENE_FLAGS } from "@/lib/special-scenes";
 import { TaskRow } from "@/components/task-row";
 import { ProjectStatusSelect } from "@/components/project-status-select";
 import { DriveExportButton } from "@/components/drive-export-button";
 import { addManualTask } from "@/lib/actions/tasks";
+import { updateProductionLogistics } from "@/lib/actions/projects";
 import { generateEmailDraft, markEmailSent, deleteEmailDraft } from "@/lib/actions/emails";
 
 export default async function ProjectDetailPage({
@@ -65,6 +67,62 @@ export default async function ProjectDetailPage({
           <DriveExportButton projectId={project.id} />
         </div>
       </div>
+
+      <section className="rounded-lg border border-neutral-200 bg-white p-6">
+        <h2 className="text-lg font-semibold">Production Logistics</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          Fill this in once the script/storyboard locks — crew size and special-scene flags
+          unlock the relevant compliance and logistics tasks below.
+        </p>
+        <form action={updateProductionLogistics} className="mt-4 space-y-4">
+          <input type="hidden" name="projectId" value={project.id} />
+          <div className="max-w-xs">
+            <label
+              htmlFor="crewSizeEstimate"
+              className="mb-1 block text-sm font-medium text-neutral-700"
+            >
+              Crew size
+            </label>
+            <input
+              id="crewSizeEstimate"
+              name="crewSizeEstimate"
+              type="number"
+              min={0}
+              defaultValue={project.crewSizeEstimate ?? ""}
+              className="input"
+            />
+          </div>
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-neutral-700">
+              Special scenes / hazardous activity
+            </legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {SPECIAL_SCENE_FLAGS.map((flag) => (
+                <label
+                  key={flag.key}
+                  className="flex items-center gap-2 text-sm text-neutral-700"
+                >
+                  <input
+                    type="checkbox"
+                    name={flag.key}
+                    defaultChecked={Boolean(
+                      project[flag.key as keyof typeof project]
+                    )}
+                    className="h-4 w-4 rounded border-neutral-300"
+                  />
+                  {flag.label}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <button
+            type="submit"
+            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            Save & regenerate suggested tasks
+          </button>
+        </form>
+      </section>
 
       <section>
         <h2 className="text-lg font-semibold">Tasks</h2>

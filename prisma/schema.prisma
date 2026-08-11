@@ -53,7 +53,7 @@ model Project {
   hasHeights      Boolean @default(false)
   hasFireOrPyro   Boolean @default(false)
 
-  status    String   @default("intake") // intake | pre-production | production | post-production | delivered | archived
+  status    String   @default("creative-scoping") // creative-scoping | script-lock | production-logistics | production | post-production | delivered | archived
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

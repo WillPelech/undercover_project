@@ -1,8 +1,9 @@
 import type { ProjectStatus, TaskStatus } from "@/lib/constants";
 
 const STATUS_COLORS: Record<ProjectStatus, string> = {
-  intake: "bg-neutral-100 text-neutral-700",
-  "pre-production": "bg-amber-100 text-amber-800",
+  "creative-scoping": "bg-neutral-100 text-neutral-700",
+  "script-lock": "bg-sky-100 text-sky-800",
+  "production-logistics": "bg-amber-100 text-amber-800",
   production: "bg-blue-100 text-blue-800",
   "post-production": "bg-purple-100 text-purple-800",
   delivered: "bg-green-100 text-green-800",

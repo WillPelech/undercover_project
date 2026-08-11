@@ -49,3 +49,19 @@ export const generateEmailSchema = z.object({
 });
 
 export const taskCategorySchema = z.enum(TASK_CATEGORIES);
+
+// Filled in once the script/storyboard locks — not at intake, since crew
+// size and special-scene details usually aren't known yet at kickoff.
+export const updateProductionLogisticsSchema = z.object({
+  projectId: z.string().min(1),
+  crewSizeEstimate: z.coerce.number().int().min(0).optional(),
+  hasStunts: z.coerce.boolean().optional(),
+  hasWeapons: z.coerce.boolean().optional(),
+  hasMinors: z.coerce.boolean().optional(),
+  hasNudity: z.coerce.boolean().optional(),
+  hasAnimals: z.coerce.boolean().optional(),
+  hasVehicles: z.coerce.boolean().optional(),
+  hasWaterOrRain: z.coerce.boolean().optional(),
+  hasHeights: z.coerce.boolean().optional(),
+  hasFireOrPyro: z.coerce.boolean().optional(),
+});

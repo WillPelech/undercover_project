@@ -97,21 +97,33 @@ function computeDueDate(
 
 /**
  * Matches every TaskTemplate against a Project's attributes and materializes
- * the matching ones as Task rows. Safe to call once, right after project
- * creation (intake wizard). Tasks are marked aiSuggested so the UI clearly
- * labels generated tasks as suggestions rather than mandates.
+ * the matching ones as Task rows. Tasks are marked aiSuggested so the UI
+ * clearly labels generated tasks as suggestions rather than mandates.
+ *
+ * Idempotent by design: this runs once at project creation (with whatever's
+ * known at intake) and again after the Production Logistics form is filled
+ * in (crew size, special-scene flags) — at which point templates conditioned
+ * on those fields start matching. Already-materialized templates (tracked by
+ * templateId) are skipped so re-running never duplicates tasks.
  */
 export async function generateTasksForProject(projectId: string) {
   const project = await db.project.findUniqueOrThrow({
     where: { id: projectId },
   });
 
-  const templates = await db.taskTemplate.findMany({
-    orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
-  });
+  const [templates, existingTasks] = await Promise.all([
+    db.taskTemplate.findMany({ orderBy: [{ category: "asc" }, { sortOrder: "asc" }] }),
+    db.task.findMany({
+      where: { projectId, templateId: { not: null } },
+      select: { templateId: true },
+    }),
+  ]);
+  const alreadyMaterialized = new Set(existingTasks.map((t) => t.templateId));
 
-  const matched = templates.filter((t) =>
-    matchesConditions(project, parseConditions(t.conditions))
+  const matched = templates.filter(
+    (t) =>
+      !alreadyMaterialized.has(t.id) &&
+      matchesConditions(project, parseConditions(t.conditions))
   );
 
   if (matched.length === 0) return { created: 0 };
@@ -131,7 +143,7 @@ export async function generateTasksForProject(projectId: string) {
   await db.activityLog.create({
     data: {
       projectId: project.id,
-      message: `Generated ${matched.length} suggested tasks from the template library based on project intake answers.`,
+      message: `Generated ${matched.length} suggested task(s) from the template library based on the project's current details.`,
     },
   });
 

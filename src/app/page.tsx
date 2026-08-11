@@ -11,8 +11,9 @@ function progressFor(tasks: { status: string }[]) {
 }
 
 const GROUP_ORDER: ProjectStatus[] = [
-  "intake",
-  "pre-production",
+  "creative-scoping",
+  "script-lock",
+  "production-logistics",
   "production",
   "post-production",
   "delivered",

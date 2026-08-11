@@ -17,9 +17,13 @@ export type BudgetTier = (typeof BUDGET_TIERS)[number];
 export const SHOOT_MODES = ["in-person", "remote", "hybrid"] as const;
 export type ShootMode = (typeof SHOOT_MODES)[number];
 
+// Mirrors the real commercial-production sequence: creative direction and
+// the script/storyboard have to lock before logistics (crew size, special
+// scenes, permits, etc.) can even be answered, let alone booked.
 export const PROJECT_STATUSES = [
-  "intake",
-  "pre-production",
+  "creative-scoping",
+  "script-lock",
+  "production-logistics",
   "production",
   "post-production",
   "delivered",
@@ -64,8 +68,9 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  intake: "Intake",
-  "pre-production": "Pre-Production",
+  "creative-scoping": "Creative Scoping",
+  "script-lock": "Script & Storyboard Lock",
+  "production-logistics": "Production Logistics",
   production: "Production",
   "post-production": "Post-Production",
   delivered: "Delivered",

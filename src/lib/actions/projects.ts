@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { generateTasksForProject } from "@/lib/rules-engine";
-import { createProjectSchema, updateProjectStatusSchema } from "@/lib/validation";
+import {
+  createProjectSchema,
+  updateProductionLogisticsSchema,
+  updateProjectStatusSchema,
+} from "@/lib/validation";
 
 // <input type="date"> gives "YYYY-MM-DD". Parsing that directly with
 // `new Date(...)` treats it as UTC midnight, which then renders as the
@@ -84,4 +88,37 @@ export async function updateProjectStatus(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath(`/projects/${parsed.data.projectId}`);
+}
+
+// Called from the Production Logistics form, once the script/storyboard has
+// locked and crew size + special-scene details are actually known. Updating
+// these can newly satisfy TaskTemplate conditions that didn't match at
+// intake, so this re-runs the rules engine (idempotent — see
+// generateTasksForProject's doc comment).
+export async function updateProductionLogistics(formData: FormData) {
+  const parsed = updateProductionLogisticsSchema.safeParse(
+    Object.fromEntries(formData.entries())
+  );
+  if (!parsed.success) return;
+  const data = parsed.data;
+
+  await db.project.update({
+    where: { id: data.projectId },
+    data: {
+      crewSizeEstimate: data.crewSizeEstimate ?? null,
+      hasStunts: Boolean(data.hasStunts),
+      hasWeapons: Boolean(data.hasWeapons),
+      hasMinors: Boolean(data.hasMinors),
+      hasNudity: Boolean(data.hasNudity),
+      hasAnimals: Boolean(data.hasAnimals),
+      hasVehicles: Boolean(data.hasVehicles),
+      hasWaterOrRain: Boolean(data.hasWaterOrRain),
+      hasHeights: Boolean(data.hasHeights),
+      hasFireOrPyro: Boolean(data.hasFireOrPyro),
+    },
+  });
+
+  await generateTasksForProject(data.projectId);
+
+  revalidatePath(`/projects/${data.projectId}`);
 }
